@@ -2,3 +2,6 @@ RealtimeSTT[faster-whisper]
 pydantic
 langchain
 langchain-openai
+faster-whisper
+numpy
+sounddevice
