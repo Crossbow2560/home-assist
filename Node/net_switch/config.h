@@ -2,9 +2,9 @@
 #include <Arduino.h>
 
 struct RuntimeConfig {
-    String   ssid       = "Deepak_4G";
+    String   ssid       = "Deepak 4G";
     String   password   = "Nishit123!";
-    String   mqttServer = "192.168.0.127";
+    String   mqttServer = "192.168.0.107";
     uint16_t mqttPort   = 1883;
 };
 
