@@ -1,0 +1,4 @@
+RealtimeSTT[faster-whisper]
+pydantic
+langchain
+langchain-openai
