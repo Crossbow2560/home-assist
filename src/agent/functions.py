@@ -1,4 +1,5 @@
 from langchain_core.tools import tool
+import os
 import subprocess
 from pydantic import BaseModel
 
@@ -7,7 +8,7 @@ class SwitchInput(BaseModel):
     status: str
 
 
-MQTT_HOST = "192.168.x.x"
+MQTT_HOST = os.environ["MQTT_HOST"]  # e.g. export MQTT_HOST=192.168.x.x
 MQTT_PORT = 1883
 
 TOPICS = ['room/light/main', 'room/fan']
