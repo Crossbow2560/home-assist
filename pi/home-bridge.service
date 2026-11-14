@@ -1,0 +1,15 @@
+[Unit]
+Description=Home assistant MQTT bridge
+After=network-online.target mosquitto.service
+Wants=network-online.target
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/home-bridge
+Environment=MQTT_HOST=localhost
+ExecStart=/home/pi/home-bridge/venv/bin/python -u bridge.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

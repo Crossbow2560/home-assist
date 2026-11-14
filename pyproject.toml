@@ -1,0 +1,28 @@
+[project]
+name = "voice-assistant"
+version = "0.1.0"
+description = "Add your description here"
+authors = [
+    { name = "nishit d b", email = "nishit.bilimagga@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "httpx>=0.28.1",
+    "numpy>=2.5.3",
+    "paho-mqtt>=2.1.0",
+    "piper-tts>=1.8.0",
+    "realtimestt>=1.2.0",
+    "silero-vad>=6.2.3",
+    "sounddevice>=0.5.6",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.18,<0.13.0"]
+build-backend = "uv_build"
+
+[project.scripts]
+assistant = "assistant.__main__:main"
+
+[tool.uv.build-backend]
+module-name = "assistant"
+module-root = ""
