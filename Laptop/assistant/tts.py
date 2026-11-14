@@ -9,11 +9,17 @@ from . import config
 
 
 class Speaker:
-    """Synthesizes sentences with Piper and plays them back in order on a worker thread."""
+    """Synthesizes sentences with Piper and plays them back in order on a worker thread.
+    Without a voice file, replies are only printed."""
 
     def __init__(self):
-        self.voice = PiperVoice.load(str(config.PIPER_VOICE))
-        self.rate = self.voice.config.sample_rate
+        self.voice = None
+        self.rate = 22050
+        if config.PIPER_VOICE.exists():
+            self.voice = PiperVoice.load(str(config.PIPER_VOICE))
+            self.rate = self.voice.config.sample_rate
+        else:
+            print(f"No voice at {config.PIPER_VOICE}; replies will be text only.")
         self.queue: queue.Queue[str | np.ndarray | None] = queue.Queue()
         self.thread = threading.Thread(target=self._worker, daemon=True)
         self.thread.start()
@@ -27,21 +33,13 @@ class Speaker:
                     return
                 if isinstance(text, np.ndarray):
                     out.write(text.reshape(-1, 1))
-                elif text:
+                elif text and self.voice:
                     for chunk in self.voice.synthesize(text):
                         out.write(chunk.audio_float_array.astype(np.float32).reshape(-1, 1))
                 self.queue.task_done()
 
     def say(self, text: str):
         self.queue.put(text)
-
-    def chime(self):
-        """Two quick rising tones: the assistant is awake and listening."""
-        tones = []
-        for freq in (880, 1320):
-            t = np.arange(int(self.rate * 0.09)) / self.rate
-            tones.append(0.25 * np.sin(2 * np.pi * freq * t) * np.hanning(len(t)))
-        self.queue.put(np.concatenate(tones).astype(np.float32))
 
     def wait(self):
         """Block until everything queued has been spoken."""

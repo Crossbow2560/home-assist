@@ -13,19 +13,6 @@ SILENCE_MS = 700  # stop recording after this much silence
 MIN_SPEECH_MS = 250  # ignore blips shorter than this
 PRE_ROLL_MS = 300  # audio kept from before speech started
 
-# Wake on double clap (set False to always listen)
-CLAP_WAKE = True
-CLAP_MIN_RMS = 0.03  # loudness floor over an 8 ms block
-CLAP_RISE_RATIO = 6.0  # must jump this many times above the 40 ms before it
-CLAP_HIGH_HZ = 2000
-CLAP_MIN_HIGH_RATIO = 0.15  # share of burst energy above CLAP_HIGH_HZ; real claps ~0.2-0.45, speech <0.07
-CLAP_QUIET_RATIO = 0.5  # 64-160 ms after the onset, level must fall under this share of the peak (real rooms ~0.3-0.4)
-CLAP_MIN_GAP_S = 0.2  # closer than this falls inside the first clap's quiet check
-CLAP_MAX_GAP_S = 0.8
-CLAP_ISOLATION_S = 0.45  # quiet needed around the pair; rejects typing and applause
-COMMAND_TIMEOUT_S = 6  # after waking, give up if nothing is said for this long
-FOLLOWUP_S = 5  # after a reply, keep listening this long without needing to clap
-
 # Speech-to-text (RealtimeSTT, running faster-whisper)
 WHISPER_MODEL = "small.en"
 WHISPER_DEVICE = "cpu"  # "cuda" works if cuBLAS/cuDNN 9 are installed

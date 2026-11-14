@@ -3,7 +3,7 @@
 Fully offline, on your LAN:
 
 ```
-laptop: mic → RealtimeSTT (Silero VAD + faster-whisper) → Qwen 3.5 0.8B (llama.cpp) → Piper → speaker
+laptop: mic or keyboard → RealtimeSTT (Silero VAD + faster-whisper) → Qwen 3.5 0.8B (llama.cpp) → Piper → speaker
                                                                │ tool call (MQTT home/cmd)
 Raspberry Pi: Mosquitto + pi/bridge.py ────────────────────────┘
                                 │ room/light/main, room/fan
@@ -14,22 +14,23 @@ ESP8266 net switch ─────────────┘ → relays
 
 ```bash
 ./run-llm.sh                                       # terminal 1: llama-server on :8080
-MQTT_HOST=<pi-ip> uv run python -m assistant       # terminal 2: talk to it
+MQTT_HOST=<pi-ip> uv run python -m assistant       # terminal 2: speak or type to it
 ```
+
+Add `--text` to type only: no microphone, and it starts faster because Whisper isn't loaded.
 
 `MQTT_HOST` defaults to `raspberrypi.local`, which works if your laptop resolves mDNS names.
 The Pi needs to be set up first (see [Raspberry Pi hub](#raspberry-pi-hub)).
 
-Clap twice to wake it (you'll hear a chime), then speak. After it replies you have
-5 seconds to say something else without clapping again. Set `CLAP_WAKE = False` to always listen.
+It listens all the time: speak, or type at the `>` prompt and press Enter. Ctrl+C quits.
 
-Settings (models, silence timeout, prompts, clap thresholds) live in `assistant/config.py`.
+Settings (models, silence timeout, prompts) live in `assistant/config.py`.
 Use headphones, or the assistant may hear itself (it ignores the mic while speaking,
 but echo right after can leak in).
 
 ## Voices
 
-Change `VOICE` in `assistant/config.py`. Official Piper voices download with:
+Without a voice file in `voices/`, replies are printed instead of spoken. Change `VOICE` in `assistant/config.py`. Official Piper voices download with:
 
 ```bash
 uv run python -m piper.download_voices --data-dir voices en_GB-alan-medium
@@ -78,17 +79,3 @@ Pi's IP and click **Apply & Reconnect**. The status page should show MQTT connec
 Switch confirmations need the current firmware in [`Node/net_switch`](../Node/net_switch), which
 publishes `online`/`offline` on `room/switch/status` (as its MQTT will) and the new state on
 `<topic>/state` after each change. Older firmware still works, but commands go unconfirmed.
-
-## Clap wake
-
-`assistant/claps.py` listens for two sharp, high-pitched sounds 0.2–0.8 s apart, each followed
-by quiet, with no other sharp sounds around them (so typing and applause don't count).
-To tune it for your room, run the calibration mode and clap:
-
-```bash
-uv run python -m assistant.claps
-```
-
-It prints every candidate with its readings and why it was rejected. If real claps show
-`too low-pitched` or `sound kept going`, relax `CLAP_MIN_HIGH_RATIO` or `CLAP_QUIET_RATIO`;
-if they don't show up at all, lower `CLAP_MIN_RMS` or `CLAP_RISE_RATIO`.

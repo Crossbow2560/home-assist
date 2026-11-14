@@ -11,7 +11,7 @@ dependencies = [
     "numpy>=2.5.3",
     "paho-mqtt>=2.1.0",
     "piper-tts>=1.8.0",
-    "realtimestt>=1.2.0",
+    "realtimestt[faster-whisper]>=1.2.0",
     "silero-vad>=6.2.3",
     "sounddevice>=0.5.6",
 ]

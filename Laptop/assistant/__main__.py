@@ -1,14 +1,41 @@
-import time
+import queue
+import sys
+import threading
 
 import httpx
 
 from . import config, tools
-from .audio import Listener
 from .llm import Chat
 from .tts import Speaker
 
+USAGE = "usage: python -m assistant [--text]   (--text: type only, no microphone)"
+
+
+def read_keyboard(inbox: queue.Queue):
+    while True:
+        try:
+            line = input()
+        except EOFError:
+            inbox.put(None)  # Ctrl+D quits
+            return
+        if line.strip():
+            inbox.put(line.strip())
+
+
+def read_mic(listener, inbox: queue.Queue):
+    while True:
+        if text := listener.listen():
+            print(f"\rYou (voice): {text}")
+            inbox.put(text)
+
 
 def main():
+    args = sys.argv[1:]
+    if args not in ([], ["--text"]):
+        print(USAGE)
+        return
+    use_mic = not args
+
     print("Loading models...")
     speaker = Speaker()
     chat = Chat()
@@ -22,46 +49,42 @@ def main():
     if not tools.connect():
         print(f"Can't reach the MQTT broker at {config.MQTT_HOST}:{config.MQTT_PORT}; device commands will fail.")
 
-    listener = Listener()
-    speaker.say("Hi, clap twice when you need me." if config.CLAP_WAKE else "Hi, I'm listening.")
+    inbox: queue.Queue[str | None] = queue.Queue()
+    listener = None
+    if use_mic:
+        from .audio import Listener  # loads Whisper, so only when the mic is used
+
+        listener = Listener()
+        threading.Thread(target=read_mic, args=(listener, inbox), daemon=True).start()
+    threading.Thread(target=read_keyboard, args=(inbox,), daemon=True).start()
+
+    print("Speak or type a message (Ctrl+C to quit)." if use_mic else "Type a message (Ctrl+C to quit).")
+    speaker.say("Hi, I'm listening.")
     speaker.wait()
 
     try:
         while True:
-            if config.CLAP_WAKE:
-                print("\n👏 Waiting for a double clap...")
-                listener.wait_for_claps()
-                speaker.chime()
-                speaker.wait()
-                timeout = config.COMMAND_TIMEOUT_S
-            else:
-                timeout = None
+            print("> ", end="", flush=True)
+            text = inbox.get()
+            if text is None:
+                break
+            if listener:
+                listener.pause()
 
-            # Keep the conversation going without re-clapping until it goes quiet.
-            while True:
-                print("🎤 Listening...")
-                text = listener.listen(timeout)
-                if not text:
-                    print("   (nothing heard)")
-                    break
-                print(f"You: {text}")
-                t0 = time.perf_counter()
-
-                print("AI: ", end="", flush=True)
-                first = None
-                for sentence in chat.reply(text):
-                    if first is None:
-                        first = time.perf_counter() - t0
-                    print(sentence, end=" ", flush=True)
-                    speaker.say(sentence)
-                print(f"  [first audio queued {first or 0:.2f}s after transcription]")
-                speaker.wait()
-                if config.CLAP_WAKE:
-                    timeout = config.FOLLOWUP_S
+            for i, sentence in enumerate(chat.reply(text)):
+                print("AI: " if i == 0 else " ", end="", flush=True)
+                print(sentence, end="", flush=True)
+                speaker.say(sentence)
+            print()
+            speaker.wait()
+            if listener:
+                listener.resume()
     except KeyboardInterrupt:
-        print("\nBye.")
+        pass
     finally:
-        listener.close()
+        print("\nBye.")
+        if listener:
+            listener.close()
         speaker.close()
 
 
