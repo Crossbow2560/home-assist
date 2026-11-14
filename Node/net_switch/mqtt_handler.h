@@ -15,11 +15,19 @@ static void mqttCallback(char* topic, byte* payload, unsigned int len) {
     Serial.printf("[MQTT] %s: %s\n", topic, msg);
     logger.push(topic, msg);
 
+    bool on = strcmp(msg, "ON") == 0;
     if (strcmp(topic, "room/light/main") == 0) {
-        digitalWrite(PIN_LIGHT, strcmp(msg, "ON") == 0 ? LOW : HIGH);
+        digitalWrite(PIN_LIGHT, on ? LOW : HIGH);
     } else if (strcmp(topic, "room/fan") == 0) {
-        digitalWrite(PIN_FAN,   strcmp(msg, "ON") == 0 ? HIGH : LOW);
+        digitalWrite(PIN_FAN,   on ? HIGH : LOW);
+    } else {
+        return;
     }
+
+    // Confirm on <topic>/state so the Pi bridge knows the switch acted.
+    // Copy the topic first: it points into the client buffer that publish() reuses.
+    String stateTopic = String(topic) + "/state";
+    mqtt.publish(stateTopic.c_str(), on ? "ON" : "OFF", true);
 }
 
 static void mqttInit() {
@@ -29,8 +37,10 @@ static void mqttInit() {
 static bool mqttReconnect() {
     mqtt.setServer(cfg.mqttServer.c_str(), cfg.mqttPort);
     Serial.print("MQTT connecting...");
-    if (mqtt.connect("ESP8266Client")) {
+    // The broker publishes "offline" for us if the connection drops.
+    if (mqtt.connect("ESP8266Client", "room/switch/status", 1, true, "offline")) {
         Serial.println("OK");
+        mqtt.publish("room/switch/status", "online", true);
         mqtt.subscribe("room/light/main");
         mqtt.subscribe("room/fan");
         return true;
