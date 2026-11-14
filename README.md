@@ -75,9 +75,8 @@ user `pi`; edit `User=` and the paths if yours is different.)
 Then point the switch at the Pi: open `http://<switch-ip>/config`, set **MQTT Server** to the
 Pi's IP and click **Apply & Reconnect**. The status page should show MQTT connected.
 
-Switch confirmations need the firmware from
-[Crossbow2560/home-assist](https://github.com/Crossbow2560/home-assist) (`Node/net_switch`) to
-publish `online`/`offline` on `room/switch/status` (as its MQTT will) and the new state on
+Switch confirmations need the current firmware in [`Node/net_switch`](../Node/net_switch), which
+publishes `online`/`offline` on `room/switch/status` (as its MQTT will) and the new state on
 `<topic>/state` after each change. Older firmware still works, but commands go unconfirmed.
 
 ## Clap wake
